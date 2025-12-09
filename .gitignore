@@ -1,0 +1,17 @@
+# Ignore build artifacts
+/noxim/bin/build/
+*.o
+*.exe
+*.dll
+
+# Ignore IDE settings
+.vscode/
+.antigravity/
+
+# Ignore large external libraries (The scripts will fetch these)
+/noxim/bin/libs/
+
+# Keep the Makefile and Scripts
+!Makefile
+!*.ps1
+!*.sh

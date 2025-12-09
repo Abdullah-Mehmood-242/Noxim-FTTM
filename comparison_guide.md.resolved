@@ -1,0 +1,85 @@
+# Bridging the Gap: Python vs. Noxim (C++)
+
+You already know the logic from your Python simulator. Here is how I translated that exact logic into the complex world of Noxim.
+
+## 1. The "Brain" (Manager)
+
+In your Python code, you had a class [FTTM_Mapper](file:///c:/Users/abdul/Desktop/Noxim/reference_fttm/fttm_mapper.py#4-102) that made all the decisions. In Noxim, I created [NoximManagerCore](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/NoximManagerCore.cpp#8-15) to do the exact same thing.
+
+| Concept | Your Python Code ([fttm_mapper.py](file:///c:/Users/abdul/Desktop/Noxim/reference_fttm/fttm_mapper.py)) | My C++ Code ([src/NoximManagerCore.cpp](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/NoximManagerCore.cpp)) |
+| :--- | :--- | :--- |
+| **The Decision Maker** | `class FTTM_Mapper` | `class NoximManagerCore` |
+| **Mapping Logic** | `def initial_mapping(self, tasks)` | `void initialMapping(vector<Task>& tasks)` |
+| **Handling Faults** | `def handle_fault(self, x, y)` | `void handleFault(int x, int y)` |
+| **Finding Spares** | `def _find_best_spare_core(self, task)` | `int findBestSpareCore(int task_id)` |
+
+**Key Takeaway**: I didn't change your logic. I just wrapped it in a C++ class so Noxim could use it.
+
+## 2. The "Body" (The Network)
+
+In Python, you used `networkx` to create a simple grid graph. Noxim is a hardware simulator, so it models actual wires and ports.
+
+| Concept | Your Python Code ([noc_simulator.py](file:///c:/Users/abdul/Desktop/Noxim/reference_fttm/noc_simulator.py)) | My C++ Code ([src/Router.h](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/Router.h) & [src/NoC.h](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/NoC.h)) |
+| :--- | :--- | :--- |
+| **The Grid** | `nx.grid_2d_graph(width, height)` | `NoC::buildMesh()` (Existing Noxim code) |
+| **Connections** | Edges in the graph | **Ports** in `NoximRouter` |
+| **MNOC Upgrade** | *Implicit in graph edges* | **Explicitly added** `DIRECTION_LOCAL_2` to [GlobalParams.h](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/GlobalParams.h) and increased port arrays in [Router.h](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/Router.h). |
+
+**Why did I touch [Router.cpp](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/Router.cpp)?**
+Your Python graph is abstract—you just say "connect A to B". In Noxim, the router needs to know exactly which physical port (North, South, East, West, Local) to use. To support "MNOC" (which implies extra connectivity), I had to physically "drill" a new port into the C++ router code (`DIRECTION_LOCAL_2`).
+
+## 3. The "Soul" (Tasks)
+
+| Concept | Your Python Code | My C++ Code ([src/DataStructs.h](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/DataStructs.h)) |
+| :--- | :--- | :--- |
+| **Task Data** | `class Task` | `struct Task` |
+| **Core Status** | `self.status = "HEALTHY"` | `enum CoreStatus { CORE_HEALTHY, ... }` |
+
+## 4. Putting It Together ([Main.cpp](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/Main.cpp))
+
+In your Python [main.py](file:///c:/Users/abdul/Desktop/Noxim/reference_fttm/main.py), you created the NoC, created the Mapper, and ran the loop.
+In Noxim's [Main.cpp](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/Main.cpp), I did the same:
+
+```cpp
+// 1. Create the NoC (just like your Python __init__)
+n = new NoC("NoC");
+
+// 2. Create Tasks (just like your Python test script)
+vector<Task> tasks;
+// ... create dummy tasks ...
+
+// 3. Run Initial Mapping (Your logic!)
+n->manager->initialMapping(tasks);
+
+// 4. Inject Fault (Your logic!)
+n->manager->injectFault(0, 0);
+```
+
+## Summary
+I took your **Logic** (FTTM algorithms) and plugged it into Noxim's **Hardware Model**.
+-   **Logic**: Preserved in [NoximManagerCore](file:///c:/Users/abdul/Desktop/Noxim/noxim/src/NoximManagerCore.cpp#8-15).
+-   **Hardware**: Modified `Router` to support the extra connections your research requires (MNOC).
+
+## 5. The Output (What you see)
+
+This is the biggest difference.
+
+| Feature | Your Python Simulator | Noxim (C++) |
+| :--- | :--- | :--- |
+| **Primary Output** | **Images/Plots** (Grid visualization, Energy graphs) | **Text Logs & Statistics** (Latency, Throughput, Power breakdown) |
+| **Visualization** | Built-in (Matplotlib) | **External** (You must plot the text data yourself) |
+| **Detail Level** | High-level (Task flow) | **Cycle-Accurate** (Flit-by-flit movement, exact timing) |
+
+**"What does Noxim do?"**
+Noxim simulates the **physical reality** of the chip.
+-   Instead of just saying "Task A sends data to Task B", Noxim simulates the **electrical signals** moving through the wires, the **buffer slots** filling up in the routers, and the **clock cycles** ticking by.
+-   **It doesn't generate images automatically.** To get the "Comparison Graph" or "Energy %", you run Noxim, save the text output to a file, and then use a Python script (like the one you already have!) to read that text file and plot the numbers.
+
+**Example Noxim Output:**
+```text
+% Total received flits: 1250
+% Global Average Latency: 15.4 cycles
+% Total Energy: 0.045 J
+% Dynamic Power: 1.2 mW
+```
+You would take these numbers to build your comparison graphs.
