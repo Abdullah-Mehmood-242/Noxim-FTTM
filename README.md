@@ -3,105 +3,106 @@
 This project implements the **Fault-Tolerant Task Mapping (FTTM)** algorithm on top of the **Noxim** Cycle-Accurate NoC Simulator. It features a custom `ManagerCore` that detects hardware faults and dynamically remaps tasks to spare cores based on energy optimization (Manhattan Distance).
 
 ## Features
-* **FTTM Algorithm:** Dynamic task remapping upon fault injection.
-* **Energy-Aware Recovery:** Selects spare cores that minimize communication energy.
-* **Modified NoC (MNOC):** Enhanced router architecture with 6 ports for fault bypass.
-* **Windows Native Build:** Fully compatible with MinGW/MSYS on Windows.
+* **FTTM Algorithm:** Dynamic task remapping upon fault injection
+* **Energy-Aware Recovery:** Selects spare cores that minimize communication energy
+* **Configurable Fault Injection:** Edit `faults.txt` to specify fault locations
+* **Interactive GUI Visualizer:** HTML/JS visualization with real-time charts
+* **Windows Native Build:** Fully compatible with MinGW/MSYS on Windows
 
 ## Prerequisites
-You need a Windows environment with the following tools added to your `PATH`:
-1.  **MinGW-w64** (GCC 14+ recommended)
-2.  **CMake**
-3.  **PowerShell**
+- **Windows** with PowerShell
+- **MinGW-w64** (GCC 14+ recommended)
+- **CMake**
 
-## Installation (The Easy Way)
-I have automated the dependency hell. Follow these steps exactly.
+## Quick Start
 
-1.  **Clone the Repository**
-    ```powershell
-    git clone [https://github.com/YOUR_USERNAME/Noxim-FTTM.git](https://github.com/YOUR_USERNAME/Noxim-FTTM.git)
-    cd Noxim-FTTM/noxim/bin
-    ```
+### 1. Clone and Build
+```powershell
+git clone https://github.com/Abdullah-Mehmood-242/Noxim-FTTM.git
+cd Noxim-FTTM/noxim/bin
 
-2.  **Install Dependencies (SystemC & YAML-CPP)**
-    Run the included setup script. This will download and compile SystemC specifically for your MinGW version.
-    ```powershell
-    .\setup_libs.ps1
-    ```
-    *Note: If the SystemC download fails, run `.\fix_systemc.ps1` immediately after.*
+# Install dependencies (one-time)
+.\setup_libs.ps1
 
-3.  **Build the Simulator**
-    Once the libraries are installed (you see green success text), build the project:
-    ```powershell
-    mingw32-make -B
-    ```
+# Build
+mingw32-make -B
+```
 
-## Usage
-Run the simulation with the default configuration:
+### 2. Configure Faults
+Edit `faults.txt` to specify fault injection points:
+```
+# Format: x,y (one per line)
+0,0    # Inject fault at Core (0,0)
+1,1    # Inject fault at Core (1,1)
+2,0    # Inject fault at Core (2,0)
+```
 
+### 3. Run Simulation
 ```powershell
 .\noxim.exe -config ../config_examples/default_config.yaml
 ```
 
-Expected Output
-You will see the system map tasks, inject a fault, and recover:
-
+Or use the helper script:
+```powershell
+.\run_fttm.bat 0,0 1,1 2,0
 ```
-Mapped Task 0 to Core 0
-...
+
+### 4. View Results
+```powershell
+start fttm_gui.html
+```
+Then click **📂 Load JSON File** → select `noxim_state.json`
+
+## Expected Output
+```
+Mapped Task 0-9 to Cores 0-9
+
 Fault injected at Core 0 (0,0)
-Task 0 displaced from Core 0. Finding spare...
 Task 0 remapped to Core 10
+
+Fault injected at Core 5 (1,1)
+Task 5 remapped to Core 12
+
+=== FTTM SIMULATION COMPLETED ===
+Injected 3 fault(s) from faults.txt
 ```
 
-Troubleshooting
-"complete binding failed" Error: This is a known SystemC issue when using the custom 6-port Router without connecting the 6th port in the testbench. The Main.cpp includes a sc_report_handler override to suppress this error and allow the simulation to run.
+## GUI Features
 
-"ld returned 1 exit status": Ensure you are running mingw32-make -B to force a full rebuild if you change compiler flags.
+| Button | Description |
+|--------|-------------|
+| 📂 Load JSON | Load real simulation output |
+| 🎮 Single Fault | Demo with 1 fault |
+| 🔥 Stress Test | Demo with 3 faults |
+| 🖱️ Interactive | Click cores to inject faults |
 
-### **Part 3: Organize Your Scripts**
-You created scripts (`setup_libs.ps1`, `fix_systemc.ps1`) during our session. You **must** keep these in the `noxim/bin` folder and commit them. They are the key to making this installable.
+## Project Structure
+```
+noxim/
+├── bin/
+│   ├── faults.txt          # Fault configuration
+│   ├── fttm_gui.html       # GUI Visualizer
+│   ├── run_fttm.bat        # Helper script
+│   ├── noxim_state.json    # Simulation output
+│   └── Makefile
+├── src/
+│   ├── Main.cpp            # Entry point with FTTM
+│   ├── NoximManagerCore.cpp # FTTM algorithm
+│   └── ...
+└── config_examples/
+```
 
-**Make sure these 3 files are in `noxim/bin`:**
-1.  `Makefile` (The one we edited with `-std=c++14` and `-lwinmm`).
-2.  `setup_libs.ps1` (The first script I gave you).
-3.  `fix_systemc.ps1` (The repair script).
+## Troubleshooting
 
-### **Part 4: Push to GitHub**
-Now, let's actually push it. Open your terminal in the **Root Folder** of the project.
+**"complete binding failed"**: Known SystemC issue, suppressed in Main.cpp.
 
-1.  **Initialize Git:**
-    ```powershell
-    git init
-    ```
+**"ld returned 1 exit status"**: Run `mingw32-make -B` for full rebuild.
 
-2.  **Add files (Respecting the .gitignore):**
-    ```powershell
-    git add .
-    ```
+**SystemC download fails**: Run `.\fix_systemc.ps1` after setup.
 
-3.  **Commit:**
-    ```powershell
-    git commit -m "Initial commit: FTTM implementation with Windows build scripts"
-    ```
+## References
 
-4.  **Link to GitHub:**
-    * Go to GitHub.com, create a **New Repository**.
-    * Name it `Noxim-FTTM`.
-    * **Do not** check "Add README" (you already made one).
-    * Copy the URL (e.g., `https://github.com/Abdul/Noxim-FTTM.git`).
+Catania V., Mineo A., Monteleone S., Palesi M., and Patti D. (2016) *Cycle-Accurate Network on Chip Simulation with Noxim*. ACM Trans. Model. Comput. Simul. 27, 1, Article 4.
 
-5.  **Push:**
-    ```powershell
-    git branch -M main
-    git remote add origin https://github.com/YOUR_USERNAME/Noxim-FTTM.git
-    git push -u origin main
-    ```
-
-**Summary of what you just achieved:**
-* You built a complex simulator.
-* You fixed the kernel.
-* You automated the installation.
-* You documented it so it actually works for others.
-
-You are done.
+## License
+See [LICENSE.txt](noxim/doc/LICENSE.txt)

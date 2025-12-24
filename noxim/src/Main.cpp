@@ -15,6 +15,8 @@
 #include "GlobalParams.h"
 
 #include <csignal>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -67,6 +69,9 @@ int sc_main(int arg_num, char *arg_vet[])
     n->reset(reset);
 
     // FTTM Initialization
+    // Clear old JSON state file
+    remove("noxim_state.json");
+    
     vector<Task> tasks;
     // Create 10 dummy tasks
     for(int i=0; i<10; i++) {
@@ -78,9 +83,58 @@ int sc_main(int arg_num, char *arg_vet[])
     n->manager->initialMapping(tasks);
     n->manager->dumpState("Initial Mapping");
     
-    // Inject Fault for testing (e.g., at core 0,0)
-    n->manager->injectFault(0, 0);
-    n->manager->dumpState("Post-Fault Mapping");
+    // Read fault injection points from faults.txt
+    // File format: one fault per line as "x,y" (e.g., "0,0" or "1,1")
+    ifstream faultFile("faults.txt");
+    int faultCount = 0;
+    
+    if (faultFile.is_open()) {
+        string line;
+        while (getline(faultFile, line)) {
+            // Skip empty lines and comments
+            if (line.empty() || line[0] == '#') continue;
+            
+            // Parse "x,y" format
+            size_t commaPos = line.find(',');
+            if (commaPos != string::npos) {
+                int x = stoi(line.substr(0, commaPos));
+                int y = stoi(line.substr(commaPos + 1));
+                
+                // Validate coordinates
+                if (x >= 0 && x < GlobalParams::mesh_dim_x && 
+                    y >= 0 && y < GlobalParams::mesh_dim_y) {
+                    faultCount++;
+                    n->manager->injectFault(x, y);
+                    
+                    stringstream ss;
+                    ss << "After Fault " << faultCount << " - Core (" << x << "," << y << ")";
+                    n->manager->dumpState(ss.str());
+                } else {
+                    cerr << "Warning: Invalid fault coordinates (" << x << "," << y << ") - skipped" << endl;
+                }
+            }
+        }
+        faultFile.close();
+        
+        if (faultCount > 0) {
+            cout << "=== FTTM SIMULATION COMPLETED ===" << endl;
+            cout << "Injected " << faultCount << " fault(s) from faults.txt" << endl;
+        } else {
+            cout << "No faults specified in faults.txt (or file is empty)" << endl;
+        }
+    } else {
+        cout << "Note: faults.txt not found. Running with no fault injection." << endl;
+        cout << "Create faults.txt with lines like '0,0' or '1,1' to inject faults." << endl;
+    }
+    
+    // Close the JSON array properly
+    {
+        ofstream json_close("noxim_state.json", ios_base::app);
+        json_close << "\n]" << endl;
+        json_close.close();
+        cout << "FTTM state saved to noxim_state.json" << endl;
+    }
+
 
     // Trace signals
     sc_trace_file *tf = NULL;

@@ -7,11 +7,22 @@
 # Ignore IDE settings
 .vscode/
 .antigravity/
+.idea/
 
-# Ignore large external libraries (The scripts will fetch these)
+# Ignore large external libraries (scripts will fetch these)
 /noxim/bin/libs/
 
-# Keep the Makefile and Scripts
+# Ignore generated simulation output (regenerated on each run)
+noxim_state.json
+
+# Keep important files
 !Makefile
 !*.ps1
 !*.sh
+!*.bat
+!faults.txt
+!fttm_gui.html
+
+# Python cache
+__pycache__/
+*.pyc

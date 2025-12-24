@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTTM-Noxim Visualizer</title>
+    <style>
+        :root {
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --accent: #00d4aa;
+            --accent-glow: rgba(0, 212, 170, 0.3);
+            --fault-red: #ff4757;
+            --task-green: #2ed573;
+            --spare-gray: #57606f;
+            --text: #f1f2f6;
+            --text-dim: #a4b0be;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+        
+        /* Mesh Grid */
+        .mesh-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .mesh-grid {
+            display: grid;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .core {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            border: 2px solid transparent;
+        }
+        
+        .core:hover {
+            transform: scale(1.08);
+            z-index: 10;
+        }
+        
+        .core.task {
+            background: linear-gradient(135deg, var(--task-green), #20bf6b);
+            box-shadow: 0 4px 20px rgba(46, 213, 115, 0.4);
+        }
+        
+        .core.fault {
+            background: linear-gradient(135deg, var(--fault-red), #ff6b81);
+            box-shadow: 0 4px 20px rgba(255, 71, 87, 0.4);
+            animation: pulse-fault 1.5s infinite;
+        }
+        
+        .core.spare {
+            background: var(--spare-gray);
+            opacity: 0.7;
+        }
+        
+        .core.remapped {
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        
+        .core-id {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            position: absolute;
+            top: 4px;
+            left: 6px;
+        }
+        
+        @keyframes pulse-fault {
+            0%, 100% { box-shadow: 0 4px 20px rgba(255, 71, 87, 0.4); }
+            50% { box-shadow: 0 4px 30px rgba(255, 71, 87, 0.7); }
+        }
+        
+        /* Energy Chart */
+        .chart-container {
+            height: 300px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 40px;
+            padding: 20px;
+        }
+        
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .bar {
+            width: 80px;
+            border-radius: 8px 8px 0 0;
+            transition: height 0.5s ease;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .bar.initial {
+            background: linear-gradient(to top, #2ed573, #7bed9f);
+        }
+        
+        .bar.post-fault {
+            background: linear-gradient(to top, #ffa502, #ff6348);
+        }
+        
+        .bar-label {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #00b894);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        /* State Selector */
+        .state-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .state-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .state-btn.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+        
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+        
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        
+        .legend-dot.task { background: var(--task-green); }
+        .legend-dot.fault { background: var(--fault-red); }
+        .legend-dot.spare { background: var(--spare-gray); }
+        
+        /* File Input */
+        .file-input-wrapper {
+            position: relative;
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        /* Info Panel */
+        .info-panel {
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+        
+        .info-panel h3 {
+            color: var(--accent);
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+        
+        .info-panel p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1000px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Demo data indicator */
+        .demo-badge {
+            background: #ffa502;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔬 FTTM-Noxim Visualizer</h1>
+        <p>Fault-Tolerant Task Mapping Simulation on Network-on-Chip</p>
+    </div>
+    
+    <div class="container">
+        <!-- Left: Mesh Grid -->
+        <div class="card">
+            <h2>NoC Mesh Grid <span id="demoIndicator" class="demo-badge">DEMO DATA</span></h2>
+            
+            <div class="state-selector" id="stateSelector">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div class="mesh-container">
+                <div class="mesh-grid" id="meshGrid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot task"></div>
+                    <span>Task Mapped</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot fault"></div>
+                    <span>Faulty Core</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot spare"></div>
+                    <span>Spare Core</span>
+                </div>
+            </div>
+            
+            <div class="stats" id="stats">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        
+        <!-- Right: Energy Chart & Controls -->
+        <div class="card">
+            <h2>Energy Comparison</h2>
+            
+            <div class="controls">
+                <div class="file-input-wrapper">
+                    <button class="btn btn-primary">📂 Load JSON File</button>
+                    <input type="file" id="fileInput" accept=".json">
+                </div>
+                <button class="btn btn-secondary" onclick="loadDemoData()">🎮 Single Fault</button>
+                <button class="btn btn-secondary" onclick="loadStressTestDemo()" style="background: linear-gradient(135deg, #ff4757, #ff6b81); color: #fff; border: none;">🔥 Stress Test</button>
+                <button class="btn btn-secondary" onclick="startInteractiveMode()" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; border: none;">🖱️ Interactive Mode</button>
+            </div>
+            
+            <div id="interactiveControls" style="display: none; margin-bottom: 15px;">
+                <div style="background: rgba(124, 58, 237, 0.2); border: 1px solid #7c3aed; border-radius: 8px; padding: 12px;">
+                    <strong style="color: #a855f7;">🖱️ Interactive Mode Active</strong><br>
+                    <span style="color: var(--text-dim); font-size: 0.85rem;">Click any core with a task to inject a fault. The FTTM algorithm will remap the task.</span>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-secondary" onclick="resetInteractive()" style="padding: 8px 16px; font-size: 0.85rem;">🔄 Reset</button>
+                        <button class="btn btn-secondary" onclick="exitInteractiveMode()" style="padding: 8px 16px; font-size: 0.85rem;">✖ Exit</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-container" id="chartContainer">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div class="info-panel">
+                <h3>📊 FTTM Algorithm Verification</h3>
+                <p id="infoText">
+                    Load the <code>noxim_state.json</code> file generated by the Noxim simulator to visualize 
+                    the Fault-Tolerant Task Mapping in action. The algorithm minimizes energy overhead by 
+                    selecting spare cores based on Manhattan Distance to communication partners.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentData = null;
+        let currentSnapshotIndex = 0;
+        
+        // Demo data matching Noxim output
+        const DEMO_DATA = [
+            {
+                title: "Initial Mapping",
+                width: 4,
+                height: 4,
+                total_energy: 900,
+                cores: generateDemoCores(4, 4, [
+                    {id: 0, task: 0}, {id: 1, task: 1}, {id: 2, task: 2}, {id: 3, task: 3},
+                    {id: 4, task: 4}, {id: 5, task: 5}, {id: 6, task: 6}, {id: 7, task: 7},
+                    {id: 8, task: 8}, {id: 9, task: 9}
+                ], [])
+            },
+            {
+                title: "Post-Fault Mapping",
+                width: 4,
+                height: 4,
+                total_energy: 1240,
+                cores: generateDemoCores(4, 4, [
+                    {id: 10, task: 0, remapped: true}, {id: 1, task: 1}, {id: 2, task: 2}, {id: 3, task: 3},
+                    {id: 4, task: 4}, {id: 5, task: 5}, {id: 6, task: 6}, {id: 7, task: 7},
+                    {id: 8, task: 8}, {id: 9, task: 9}
+                ], [0])
+            }
+        ];
+        
+        function generateDemoCores(width, height, taskMappings, faultyCores) {
+            const cores = [];
+            const taskMap = {};
+            const remappedTasks = new Set();
+            
+            taskMappings.forEach(m => {
+                taskMap[m.id] = m.task;
+                if (m.remapped) remappedTasks.add(m.id);
+            });
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const id = y * width + x;
+                    let status = "HEALTHY";
+                    let task_id = null;
+                    
+                    if (faultyCores.includes(id)) {
+                        status = "FAULTY";
+                    } else if (id in taskMap) {
+                        status = "BUSY";
+                        task_id = taskMap[id];
+                    }
+                    
+                    cores.push({
+                        id: id,
+                        x: x,
+                        y: y,
+                        status: status,
+                        task_id: task_id,
+                        remapped: remappedTasks.has(id)
+                    });
+                }
+            }
+            return cores;
+        }
+        
+        function loadDemoData() {
+            interactiveMode = false;
+            document.getElementById('interactiveControls').style.display = 'none';
+            currentData = DEMO_DATA;
+            document.getElementById('demoIndicator').style.display = 'inline';
+            document.getElementById('demoIndicator').textContent = 'SINGLE FAULT DEMO';
+            document.getElementById('demoIndicator').style.background = '#ffa502';
+            currentSnapshotIndex = 0;
+            renderAll();
+        }
+        
+        // Stress Test Demo Data (3 faults)
+        const STRESS_TEST_DATA = [
+            {
+                title: "Initial Mapping",
+                width: 4,
+                height: 4,
+                total_energy: 1500,
+                cores: generateDemoCores(4, 4, [
+                    {id: 0, task: 0}, {id: 1, task: 1}, {id: 2, task: 2}, {id: 3, task: 3},
+                    {id: 4, task: 4}, {id: 5, task: 5}, {id: 6, task: 6}, {id: 7, task: 7},
+                    {id: 8, task: 8}, {id: 9, task: 9}
+                ], [])
+            },
+            {
+                title: "Fault 1 - Core (0,0)",
+                width: 4,
+                height: 4,
+                total_energy: 1700,
+                cores: generateDemoCores(4, 4, [
+                    {id: 10, task: 0}, {id: 1, task: 1}, {id: 2, task: 2}, {id: 3, task: 3},
+                    {id: 4, task: 4}, {id: 5, task: 5}, {id: 6, task: 6}, {id: 7, task: 7},
+                    {id: 8, task: 8}, {id: 9, task: 9}
+                ], [0])
+            },
+            {
+                title: "Fault 2 - Core (1,1)",
+                width: 4,
+                height: 4,
+                total_energy: 1950,
+                cores: generateDemoCores(4, 4, [
+                    {id: 10, task: 0}, {id: 1, task: 1}, {id: 2, task: 2}, {id: 3, task: 3},
+                    {id: 4, task: 4}, {id: 11, task: 5}, {id: 6, task: 6}, {id: 7, task: 7},
+                    {id: 8, task: 8}, {id: 9, task: 9}
+                ], [0, 5])
+            },
+            {
+                title: "Fault 3 - Core (2,0)",
+                width: 4,
+                height: 4,
+                total_energy: 2180,
+                cores: generateDemoCores(4, 4, [
+                    {id: 10, task: 0}, {id: 1, task: 1}, {id: 12, task: 2}, {id: 3, task: 3},
+                    {id: 4, task: 4}, {id: 11, task: 5}, {id: 6, task: 6}, {id: 7, task: 7},
+                    {id: 8, task: 8}, {id: 9, task: 9}
+                ], [0, 5, 2])
+            }
+        ];
+        
+        function loadStressTestDemo() {
+            currentData = STRESS_TEST_DATA;
+            document.getElementById('demoIndicator').style.display = 'inline';
+            document.getElementById('demoIndicator').textContent = 'STRESS TEST DEMO';
+            document.getElementById('demoIndicator').style.background = 'linear-gradient(135deg, #ff4757, #ff6b81)';
+            currentSnapshotIndex = 0;
+            interactiveMode = false;
+            document.getElementById('interactiveControls').style.display = 'none';
+            renderAll();
+        }
+        
+        // Interactive Mode State
+        let interactiveMode = false;
+        let interactiveState = null;
+        let interactiveHistory = [];
+        
+        function startInteractiveMode() {
+            interactiveMode = true;
+            // Create initial clean state
+            interactiveState = {
+                title: "Interactive - Initial",
+                width: 4,
+                height: 4,
+                total_energy: 0,
+                cores: [],
+                taskMap: {},  // task_id -> core_id
+                faultCount: 0
+            };
+            
+            // Initialize 4x4 grid with 10 tasks
+            for (let y = 0; y < 4; y++) {
+                for (let x = 0; x < 4; x++) {
+                    const id = y * 4 + x;
+                    interactiveState.cores.push({
+                        id: id,
+                        x: x,
+                        y: y,
+                        status: id < 10 ? "BUSY" : "HEALTHY",
+                        task_id: id < 10 ? id : null
+                    });
+                    if (id < 10) {
+                        interactiveState.taskMap[id] = id;
+                    }
+                }
+            }
+            
+            // Calculate initial energy
+            interactiveState.total_energy = calculateInteractiveEnergy();
+            
+            // Set up history
+            interactiveHistory = [JSON.parse(JSON.stringify(interactiveState))];
+            currentData = interactiveHistory;
+            currentSnapshotIndex = 0;
+            
+            document.getElementById('demoIndicator').style.display = 'inline';
+            document.getElementById('demoIndicator').textContent = 'INTERACTIVE MODE';
+            document.getElementById('demoIndicator').style.background = 'linear-gradient(135deg, #7c3aed, #a855f7)';
+            document.getElementById('interactiveControls').style.display = 'block';
+            
+            renderAll();
+        }
+        
+        function exitInteractiveMode() {
+            interactiveMode = false;
+            document.getElementById('interactiveControls').style.display = 'none';
+            loadDemoData();
+        }
+        
+        function resetInteractive() {
+            startInteractiveMode();
+        }
+        
+        function calculateInteractiveEnergy() {
+            // Simplified energy calculation: sum of Manhattan distances between adjacent task pairs
+            let energy = 0;
+            for (let taskId = 1; taskId < 10; taskId++) {
+                const coreId1 = interactiveState.taskMap[taskId - 1];
+                const coreId2 = interactiveState.taskMap[taskId];
+                if (coreId1 !== undefined && coreId2 !== undefined) {
+                    const core1 = interactiveState.cores.find(c => c.id === coreId1);
+                    const core2 = interactiveState.cores.find(c => c.id === coreId2);
+                    if (core1 && core2) {
+                        const dist = Math.abs(core1.x - core2.x) + Math.abs(core1.y - core2.y);
+                        energy += dist * 100; // Volume = 100
+                    }
+                }
+            }
+            return energy;
+        }
+        
+        function injectFaultInteractive(coreId) {
+            const core = interactiveState.cores.find(c => c.id === coreId);
+            if (!core || core.status === 'FAULTY' || core.task_id === null) {
+                return; // Can only fault busy cores
+            }
+            
+            const displacedTaskId = core.task_id;
+            
+            // Mark core as faulty
+            core.status = 'FAULTY';
+            core.task_id = null;
+            interactiveState.faultCount++;
+            
+            // Find best spare core using FTTM algorithm
+            const bestSpare = findBestSpareCore(displacedTaskId);
+            
+            if (bestSpare) {
+                bestSpare.status = 'BUSY';
+                bestSpare.task_id = displacedTaskId;
+                bestSpare.remapped = true;
+                interactiveState.taskMap[displacedTaskId] = bestSpare.id;
+            }
+            
+            // Update energy and title
+            interactiveState.total_energy = calculateInteractiveEnergy();
+            interactiveState.title = `After Fault ${interactiveState.faultCount} - Core (${core.x},${core.y})`;
+            
+            // Add to history
+            interactiveHistory.push(JSON.parse(JSON.stringify(interactiveState)));
+            currentData = interactiveHistory;
+            currentSnapshotIndex = interactiveHistory.length - 1;
+            
+            renderAll();
+        }
+        
+        function findBestSpareCore(taskId) {
+            // Get available spare cores
+            const spares = interactiveState.cores.filter(c => c.status === 'HEALTHY' && c.task_id === null);
+            if (spares.length === 0) return null;
+            
+            let bestCore = null;
+            let minEnergy = Infinity;
+            
+            // Find the core that minimizes energy increase
+            for (const spare of spares) {
+                let energy = 0;
+                
+                // Calculate energy to communication partners (adjacent tasks)
+                if (taskId > 0) {
+                    const partnerCoreId = interactiveState.taskMap[taskId - 1];
+                    const partnerCore = interactiveState.cores.find(c => c.id === partnerCoreId);
+                    if (partnerCore && partnerCore.status !== 'FAULTY') {
+                        energy += Math.abs(spare.x - partnerCore.x) + Math.abs(spare.y - partnerCore.y);
+                    }
+                }
+                if (taskId < 9) {
+                    const partnerCoreId = interactiveState.taskMap[taskId + 1];
+                    const partnerCore = interactiveState.cores.find(c => c.id === partnerCoreId);
+                    if (partnerCore && partnerCore.status !== 'FAULTY') {
+                        energy += Math.abs(spare.x - partnerCore.x) + Math.abs(spare.y - partnerCore.y);
+                    }
+                }
+                
+                if (energy < minEnergy) {
+                    minEnergy = energy;
+                    bestCore = spare;
+                }
+            }
+            
+            return bestCore;
+        }
+        
+        function renderAll() {
+            if (!currentData || currentData.length === 0) return;
+            
+            renderStateSelector();
+            renderMesh(currentData[currentSnapshotIndex]);
+            renderStats(currentData[currentSnapshotIndex]);
+            renderChart();
+        }
+        
+        function renderStateSelector() {
+            const container = document.getElementById('stateSelector');
+            container.innerHTML = '';
+            
+            currentData.forEach((snapshot, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'state-btn' + (index === currentSnapshotIndex ? ' active' : '');
+                btn.textContent = snapshot.title;
+                btn.onclick = () => {
+                    currentSnapshotIndex = index;
+                    renderAll();
+                };
+                container.appendChild(btn);
+            });
+        }
+        
+        function renderMesh(snapshot) {
+            const grid = document.getElementById('meshGrid');
+            const width = snapshot.width;
+            const height = snapshot.height;
+            
+            grid.style.gridTemplateColumns = `repeat(${width}, 80px)`;
+            grid.innerHTML = '';
+            
+            // Sort cores by position for proper grid layout
+            const sortedCores = [...snapshot.cores].sort((a, b) => {
+                if (a.y !== b.y) return a.y - b.y;
+                return a.x - b.x;
+            });
+            
+            sortedCores.forEach(core => {
+                const div = document.createElement('div');
+                div.className = 'core';
+                
+                if (core.status === 'FAULTY') {
+                    div.classList.add('fault');
+                    div.innerHTML = `<span class="core-id">${core.id}</span>❌ FAULT`;
+                } else if (core.task_id !== null) {
+                    div.classList.add('task');
+                    if (core.remapped) div.classList.add('remapped');
+                    div.innerHTML = `<span class="core-id">${core.id}</span>T${core.task_id}`;
+                    
+                    // Add click handler for interactive mode
+                    if (interactiveMode && currentSnapshotIndex === interactiveHistory.length - 1) {
+                        div.style.cursor = 'pointer';
+                        div.title = `Core ${core.id} (${core.x},${core.y})\nClick to inject fault!`;
+                        div.onclick = () => injectFaultInteractive(core.id);
+                    }
+                } else {
+                    div.classList.add('spare');
+                    div.innerHTML = `<span class="core-id">${core.id}</span>Spare`;
+                }
+                
+                if (!div.title) {
+                    div.title = `Core ${core.id} (${core.x},${core.y})\nStatus: ${core.status}`;
+                }
+                grid.appendChild(div);
+            });
+        }
+        
+        function renderStats(snapshot) {
+            const statsDiv = document.getElementById('stats');
+            const taskCount = snapshot.cores.filter(c => c.task_id !== null).length;
+            const faultCount = snapshot.cores.filter(c => c.status === 'FAULTY').length;
+            const spareCount = snapshot.cores.filter(c => c.status === 'HEALTHY' && c.task_id === null).length;
+            
+            statsDiv.innerHTML = `
+                <div class="stat-box">
+                    <div class="stat-value">${taskCount}</div>
+                    <div class="stat-label">Tasks Mapped</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: var(--fault-red)">${faultCount}</div>
+                    <div class="stat-label">Faulty Cores</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${spareCount}</div>
+                    <div class="stat-label">Spare Cores</div>
+                </div>
+            `;
+        }
+        
+        function renderChart() {
+            const container = document.getElementById('chartContainer');
+            const infoText = document.getElementById('infoText');
+            
+            if (currentData.length < 2) {
+                container.innerHTML = '<p style="color: var(--text-dim);">Need at least 2 snapshots for comparison</p>';
+                return;
+            }
+            
+            // Show all snapshots as bars for stress test visualization
+            const energies = currentData.map(s => s.total_energy);
+            const maxEnergy = Math.max(...energies);
+            const maxHeight = 180;
+            
+            const colors = ['#2ed573', '#ffa502', '#ff6348', '#ff4757', '#c44569'];
+            
+            let barsHTML = '';
+            currentData.forEach((snapshot, i) => {
+                const height = (snapshot.total_energy / maxEnergy) * maxHeight;
+                const color = colors[Math.min(i, colors.length - 1)];
+                const isActive = i === currentSnapshotIndex ? 'border: 3px solid white;' : '';
+                barsHTML += `
+                    <div class="bar-wrapper" onclick="currentSnapshotIndex=${i}; renderAll();" style="cursor: pointer;">
+                        <div class="bar" style="height: ${height}px; background: ${color}; ${isActive} width: 60px;">${snapshot.total_energy}</div>
+                        <div class="bar-label" style="font-size: 0.7rem; max-width: 70px; text-align: center;">${i === 0 ? 'Initial' : 'F' + i}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = barsHTML;
+            
+            const initialEnergy = currentData[0].total_energy;
+            const finalEnergy = currentData[currentData.length - 1].total_energy;
+            const overhead = ((finalEnergy - initialEnergy) / initialEnergy * 100).toFixed(1);
+            const faultCount = currentData.length - 1;
+            
+            infoText.innerHTML = `
+                <strong>🔥 Stress Test Analysis:</strong><br>
+                • Faults Injected: <strong>${faultCount}</strong><br>
+                • Initial Energy: <strong>${initialEnergy}</strong><br>
+                • Final Energy: <strong>${finalEnergy}</strong><br>
+                • Total Overhead: <strong style="color: ${overhead > 50 ? 'var(--fault-red)' : 'var(--accent)'}">${overhead}%</strong><br><br>
+                FTTM algorithm successfully recovered from ${faultCount} fault(s), remapping tasks to maintain system operation.
+            `;
+        }
+        
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                // Fix common JSON issues from Noxim output
+                let fixedText = text.trim();
+                if (!fixedText.startsWith('[')) {
+                    fixedText = '[' + fixedText;
+                }
+                if (!fixedText.endsWith(']')) {
+                    fixedText = fixedText + ']';
+                }
+                
+                currentData = JSON.parse(fixedText);
+                currentSnapshotIndex = 0;
+                document.getElementById('demoIndicator').style.display = 'none';
+                renderAll();
+            } catch (err) {
+                alert('Error parsing JSON: ' + err.message);
+            }
+        });
+        
+        // Load demo data on start
+        loadDemoData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# FTTM Fault Injection Configuration
+# Format: x,y (one fault per line)
+# Example: 0,0 means inject fault at Core (0,0)
+# Lines starting with # are comments
+
+# Default stress test faults:
+0,0
+1,1
+2,0
