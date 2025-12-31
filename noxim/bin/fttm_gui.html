@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FTTM-Noxim Visualizer</title>
+    <title>FTTM Network Stimulation Lab</title>
     <style>
         :root {
             --bg-dark: #0f0f1a;
@@ -15,6 +15,8 @@
             --spare-gray: #57606f;
             --text: #f1f2f6;
             --text-dim: #a4b0be;
+            --thermal-orange: #ff9f43;
+            --burst-purple: #a855f7;
         }
         
         * {
@@ -38,11 +40,17 @@
         
         .header h1 {
             font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            background: linear-gradient(135deg, var(--accent), #7c3aed, #ff4757);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 8px;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(20deg); }
         }
         
         .header p {
@@ -50,12 +58,32 @@
             font-size: 1.1rem;
         }
         
-        .container {
-            max-width: 1400px;
+        .header .subtitle-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.8); }
+        }
+        
+        .main-container {
+            max-width: 1600px;
             margin: 0 auto;
+        }
+        
+        .container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 24px;
+            margin-bottom: 24px;
         }
         
         .card {
@@ -64,6 +92,10 @@
             padding: 24px;
             border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        
+        .card.full-width {
+            grid-column: 1 / -1;
         }
         
         .card h2 {
@@ -81,6 +113,133 @@
             height: 24px;
             background: var(--accent);
             border-radius: 2px;
+        }
+        
+        /* Stimulation Lab Styles */
+        .stimulation-lab {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(168, 85, 247, 0.05));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+        
+        .stimulation-lab h2 {
+            color: #a855f7;
+        }
+        
+        .stimulation-lab h2::before {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+        }
+        
+        .stim-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .stim-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .stim-card:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-4px);
+        }
+        
+        .stim-card.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        
+        .stim-card .stim-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .stim-card .stim-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .stim-card .stim-desc {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        
+        .stim-card.fault-wave { border-top: 3px solid var(--fault-red); }
+        .stim-card.traffic { border-top: 3px solid var(--accent); }
+        .stim-card.thermal { border-top: 3px solid var(--thermal-orange); }
+        .stim-card.workload { border-top: 3px solid var(--burst-purple); }
+        
+        .stim-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 16px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+        
+        .stim-control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .stim-control-group label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        
+        .stim-slider {
+            width: 150px;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .stim-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+        
+        .stim-btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .stim-btn-run {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            color: white;
+        }
+        
+        .stim-btn-run:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+        }
+        
+        .stim-btn-stop {
+            background: var(--fault-red);
+            color: white;
         }
         
         /* Mesh Grid */
@@ -138,12 +297,41 @@
             box-shadow: 0 0 20px var(--accent-glow);
         }
         
+        .core.thermal-hot {
+            animation: thermalPulse 1s infinite;
+        }
+        
+        @keyframes thermalPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 159, 67, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(255, 159, 67, 0.9); }
+        }
+        
+        .core.workload-burst {
+            animation: workloadBurst 0.5s ease-out;
+        }
+        
+        @keyframes workloadBurst {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        
         .core-id {
             font-size: 0.7rem;
             opacity: 0.7;
             position: absolute;
             top: 4px;
             left: 6px;
+        }
+        
+        .traffic-indicator {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 0.6rem;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 4px;
+            border-radius: 3px;
         }
         
         @keyframes pulse-fault {
@@ -239,6 +427,7 @@
             display: flex;
             gap: 8px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         
         .state-btn {
@@ -260,7 +449,7 @@
         /* Stats */
         .stats {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 16px;
             margin-top: 20px;
         }
@@ -290,6 +479,7 @@
             gap: 20px;
             justify-content: center;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
         
         .legend-item {
@@ -309,6 +499,7 @@
         .legend-dot.task { background: var(--task-green); }
         .legend-dot.fault { background: var(--fault-red); }
         .legend-dot.spare { background: var(--spare-gray); }
+        .legend-dot.thermal { background: var(--thermal-orange); }
         
         /* File Input */
         .file-input-wrapper {
@@ -344,7 +535,34 @@
             line-height: 1.5;
         }
         
+        /* Stimulation Log */
+        .stim-log {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+        }
+        
+        .stim-log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .stim-log-entry.fault { color: var(--fault-red); }
+        .stim-log-entry.remap { color: var(--accent); }
+        .stim-log-entry.thermal { color: var(--thermal-orange); }
+        .stim-log-entry.traffic { color: #3498db; }
+        
         /* Responsive */
+        @media (max-width: 1200px) {
+            .stim-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
         @media (max-width: 1000px) {
             .container {
                 grid-template-columns: 1fr;
@@ -365,81 +583,141 @@
 </head>
 <body>
     <div class="header">
-        <h1>🔬 FTTM-Noxim Visualizer</h1>
-        <p>Fault-Tolerant Task Mapping Simulation on Network-on-Chip</p>
+        <h1>🔬 FTTM Network Stimulation Lab</h1>
+        <p>Interactive System Stimulation & Fault-Tolerant Task Mapping Analysis</p>
+        <span class="subtitle-badge">⚡ Real-time Stimulation Testing Platform</span>
     </div>
     
-    <div class="container">
-        <!-- Left: Mesh Grid -->
-        <div class="card">
-            <h2>NoC Mesh Grid <span id="demoIndicator" class="demo-badge">DEMO DATA</span></h2>
-            
-            <div class="state-selector" id="stateSelector">
-                <!-- Populated by JS -->
+    <div class="main-container">
+        <!-- Stimulation Lab Panel -->
+        <div class="container">
+            <div class="card full-width stimulation-lab">
+                <h2>⚡ Stimulation Lab</h2>
+                
+                <div class="stim-grid">
+                    <div class="stim-card fault-wave" onclick="selectStimMode('faultWave')" id="stim-faultWave">
+                        <span class="stim-icon">💥</span>
+                        <div class="stim-title">Fault Wave Stimulation</div>
+                        <div class="stim-desc">Inject random fault sequence</div>
+                    </div>
+                    <div class="stim-card traffic" onclick="selectStimMode('traffic')" id="stim-traffic">
+                        <span class="stim-icon">📡</span>
+                        <div class="stim-title">Traffic Pattern Stimulation</div>
+                        <div class="stim-desc">Visualize communication flows</div>
+                    </div>
+                    <div class="stim-card thermal" onclick="selectStimMode('thermal')" id="stim-thermal">
+                        <span class="stim-icon">🔥</span>
+                        <div class="stim-title">Thermal Hotspot Stimulation</div>
+                        <div class="stim-desc">Simulate thermal stress zones</div>
+                    </div>
+                    <div class="stim-card workload" onclick="selectStimMode('workload')" id="stim-workload">
+                        <span class="stim-icon">📊</span>
+                        <div class="stim-title">Workload Burst Stimulation</div>
+                        <div class="stim-desc">Trigger load spikes on cores</div>
+                    </div>
+                </div>
+                
+                <div class="stim-controls">
+                    <div class="stim-control-group">
+                        <label>Stimulation Intensity</label>
+                        <input type="range" class="stim-slider" id="intensitySlider" min="1" max="5" value="3">
+                        <span id="intensityValue" style="text-align: center; color: var(--accent);">3</span>
+                    </div>
+                    <div class="stim-control-group">
+                        <label>Animation Speed</label>
+                        <input type="range" class="stim-slider" id="speedSlider" min="1" max="5" value="3">
+                        <span id="speedValue" style="text-align: center; color: var(--accent);">Normal</span>
+                    </div>
+                    <div class="stim-control-group">
+                        <label>Auto-Repeat</label>
+                        <input type="checkbox" id="autoRepeat" style="width: 20px; height: 20px;">
+                    </div>
+                    <button class="stim-btn stim-btn-run" onclick="runStimulation()" id="runBtn">▶ Run Stimulation</button>
+                    <button class="stim-btn stim-btn-stop" onclick="stopStimulation()" id="stopBtn" style="display: none;">⏹ Stop</button>
+                </div>
             </div>
-            
-            <div class="mesh-container">
-                <div class="mesh-grid" id="meshGrid">
+        </div>
+        
+        <div class="container">
+            <!-- Left: Mesh Grid -->
+            <div class="card">
+                <h2>NoC Mesh Grid <span id="demoIndicator" class="demo-badge">DEMO DATA</span></h2>
+                
+                <div class="state-selector" id="stateSelector">
+                    <!-- Populated by JS -->
+                </div>
+                
+                <div class="mesh-container">
+                    <div class="mesh-grid" id="meshGrid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot task"></div>
+                        <span>Task Mapped</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot fault"></div>
+                        <span>Faulty Core</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot spare"></div>
+                        <span>Spare Core</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot thermal"></div>
+                        <span>Thermal Stress</span>
+                    </div>
+                </div>
+                
+                <div class="stats" id="stats">
                     <!-- Populated by JS -->
                 </div>
             </div>
             
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-dot task"></div>
-                    <span>Task Mapped</span>
+            <!-- Right: Energy Chart & Controls -->
+            <div class="card">
+                <h2>Stimulation Analysis</h2>
+                
+                <div class="controls">
+                    <div class="file-input-wrapper">
+                        <button class="btn btn-primary">📂 Load JSON File</button>
+                        <input type="file" id="fileInput" accept=".json">
+                    </div>
+                    <button class="btn btn-secondary" onclick="loadDemoData()">🎮 Single Fault</button>
+                    <button class="btn btn-secondary" onclick="loadStressTestDemo()" style="background: linear-gradient(135deg, #ff4757, #ff6b81); color: #fff; border: none;">🔥 Stress Test</button>
+                    <button class="btn btn-secondary" onclick="startInteractiveMode()" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; border: none;">🖱️ Interactive</button>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-dot fault"></div>
-                    <span>Faulty Core</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot spare"></div>
-                    <span>Spare Core</span>
-                </div>
-            </div>
-            
-            <div class="stats" id="stats">
-                <!-- Populated by JS -->
-            </div>
-        </div>
-        
-        <!-- Right: Energy Chart & Controls -->
-        <div class="card">
-            <h2>Energy Comparison</h2>
-            
-            <div class="controls">
-                <div class="file-input-wrapper">
-                    <button class="btn btn-primary">📂 Load JSON File</button>
-                    <input type="file" id="fileInput" accept=".json">
-                </div>
-                <button class="btn btn-secondary" onclick="loadDemoData()">🎮 Single Fault</button>
-                <button class="btn btn-secondary" onclick="loadStressTestDemo()" style="background: linear-gradient(135deg, #ff4757, #ff6b81); color: #fff; border: none;">🔥 Stress Test</button>
-                <button class="btn btn-secondary" onclick="startInteractiveMode()" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; border: none;">🖱️ Interactive Mode</button>
-            </div>
-            
-            <div id="interactiveControls" style="display: none; margin-bottom: 15px;">
-                <div style="background: rgba(124, 58, 237, 0.2); border: 1px solid #7c3aed; border-radius: 8px; padding: 12px;">
-                    <strong style="color: #a855f7;">🖱️ Interactive Mode Active</strong><br>
-                    <span style="color: var(--text-dim); font-size: 0.85rem;">Click any core with a task to inject a fault. The FTTM algorithm will remap the task.</span>
-                    <div style="margin-top: 10px;">
-                        <button class="btn btn-secondary" onclick="resetInteractive()" style="padding: 8px 16px; font-size: 0.85rem;">🔄 Reset</button>
-                        <button class="btn btn-secondary" onclick="exitInteractiveMode()" style="padding: 8px 16px; font-size: 0.85rem;">✖ Exit</button>
+                
+                <div id="interactiveControls" style="display: none; margin-bottom: 15px;">
+                    <div style="background: rgba(124, 58, 237, 0.2); border: 1px solid #7c3aed; border-radius: 8px; padding: 12px;">
+                        <strong style="color: #a855f7;">🖱️ Interactive Stimulation Active</strong><br>
+                        <span style="color: var(--text-dim); font-size: 0.85rem;">Click any core with a task to stimulate a fault. FTTM will respond.</span>
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-secondary" onclick="resetInteractive()" style="padding: 8px 16px; font-size: 0.85rem;">🔄 Reset</button>
+                            <button class="btn btn-secondary" onclick="exitInteractiveMode()" style="padding: 8px 16px; font-size: 0.85rem;">✖ Exit</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="chart-container" id="chartContainer">
-                <!-- Populated by JS -->
-            </div>
-            
-            <div class="info-panel">
-                <h3>📊 FTTM Algorithm Verification</h3>
-                <p id="infoText">
-                    Load the <code>noxim_state.json</code> file generated by the Noxim simulator to visualize 
-                    the Fault-Tolerant Task Mapping in action. The algorithm minimizes energy overhead by 
-                    selecting spare cores based on Manhattan Distance to communication partners.
-                </p>
+                
+                <div class="chart-container" id="chartContainer">
+                    <!-- Populated by JS -->
+                </div>
+                
+                <div class="info-panel">
+                    <h3>📊 Stimulation Results</h3>
+                    <p id="infoText">
+                        Select a <strong>stimulation mode</strong> above and click <strong>Run Stimulation</strong> to observe 
+                        how the FTTM algorithm responds to system stress. The algorithm dynamically remaps tasks to maintain 
+                        system reliability while minimizing energy overhead.
+                    </p>
+                </div>
+                
+                <div class="stim-log" id="stimLog" style="margin-top: 16px;">
+                    <div class="stim-log-entry" style="color: var(--text-dim);">📋 Stimulation log ready...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -448,6 +726,9 @@
         // State management
         let currentData = null;
         let currentSnapshotIndex = 0;
+        let selectedStimMode = 'faultWave';
+        let stimulationRunning = false;
+        let stimInterval = null;
         
         // Demo data matching Noxim output
         const DEMO_DATA = [
@@ -475,7 +756,7 @@
             }
         ];
         
-        function generateDemoCores(width, height, taskMappings, faultyCores) {
+        function generateDemoCores(width, height, taskMappings, faultyCores, thermalCores = [], trafficLevels = {}) {
             const cores = [];
             const taskMap = {};
             const remappedTasks = new Set();
@@ -504,14 +785,190 @@
                         y: y,
                         status: status,
                         task_id: task_id,
-                        remapped: remappedTasks.has(id)
+                        remapped: remappedTasks.has(id),
+                        thermal: thermalCores.includes(id),
+                        traffic: trafficLevels[id] || 0
                     });
                 }
             }
             return cores;
         }
         
+        // Stimulation Mode Selection
+        function selectStimMode(mode) {
+            selectedStimMode = mode;
+            document.querySelectorAll('.stim-card').forEach(c => c.classList.remove('active'));
+            document.getElementById('stim-' + mode).classList.add('active');
+            addLogEntry(`Selected: ${getModeName(mode)} stimulation mode`, 'traffic');
+        }
+        
+        function getModeName(mode) {
+            const names = {
+                'faultWave': 'Fault Wave',
+                'traffic': 'Traffic Pattern',
+                'thermal': 'Thermal Hotspot',
+                'workload': 'Workload Burst'
+            };
+            return names[mode] || mode;
+        }
+        
+        // Add log entry
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById('stimLog');
+            const entry = document.createElement('div');
+            entry.className = 'stim-log-entry ' + type;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            if (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        // Run Stimulation
+        function runStimulation() {
+            const intensity = parseInt(document.getElementById('intensitySlider').value);
+            const speed = parseInt(document.getElementById('speedSlider').value);
+            const delay = [2000, 1500, 1000, 500, 250][speed - 1];
+            
+            stimulationRunning = true;
+            document.getElementById('runBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            
+            addLogEntry(`Starting ${getModeName(selectedStimMode)} with intensity ${intensity}`, selectedStimMode === 'faultWave' ? 'fault' : selectedStimMode);
+            
+            // Initialize clean state
+            startInteractiveMode();
+            
+            let stimCount = 0;
+            const maxStims = intensity;
+            
+            stimInterval = setInterval(() => {
+                if (!stimulationRunning || stimCount >= maxStims) {
+                    if (document.getElementById('autoRepeat').checked && stimulationRunning) {
+                        startInteractiveMode();
+                        stimCount = 0;
+                        addLogEntry('Auto-repeating stimulation cycle', 'traffic');
+                    } else {
+                        stopStimulation();
+                    }
+                    return;
+                }
+                
+                switch (selectedStimMode) {
+                    case 'faultWave':
+                        runFaultWaveStep();
+                        break;
+                    case 'traffic':
+                        runTrafficStep();
+                        break;
+                    case 'thermal':
+                        runThermalStep();
+                        break;
+                    case 'workload':
+                        runWorkloadStep();
+                        break;
+                }
+                
+                stimCount++;
+            }, delay);
+        }
+        
+        function stopStimulation() {
+            stimulationRunning = false;
+            if (stimInterval) {
+                clearInterval(stimInterval);
+                stimInterval = null;
+            }
+            document.getElementById('runBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+            addLogEntry('Stimulation stopped', 'traffic');
+        }
+        
+        // Fault Wave Stimulation
+        function runFaultWaveStep() {
+            // Find a random core with a task that's not already faulty
+            const busyCores = interactiveState.cores.filter(c => c.status === 'BUSY' && c.task_id !== null);
+            if (busyCores.length === 0) {
+                addLogEntry('No more cores available for fault injection!', 'fault');
+                return;
+            }
+            
+            const randomCore = busyCores[Math.floor(Math.random() * busyCores.length)];
+            injectFaultInteractive(randomCore.id);
+            addLogEntry(`💥 Fault injected at Core ${randomCore.id} (${randomCore.x},${randomCore.y})`, 'fault');
+        }
+        
+        // Traffic Pattern Stimulation
+        function runTrafficStep() {
+            // Visualize traffic patterns by highlighting communication paths
+            interactiveState.cores.forEach(core => {
+                if (core.task_id !== null) {
+                    core.traffic = Math.floor(Math.random() * 100) + 20;
+                }
+            });
+            interactiveState.title = 'Traffic Pattern Analysis';
+            addLogEntry('📡 Traffic pattern updated - showing communication loads', 'traffic');
+            renderMesh(interactiveState);
+        }
+        
+        // Thermal Hotspot Stimulation
+        function runThermalStep() {
+            // Create thermal hotspots in random regions
+            const hotspotCenter = Math.floor(Math.random() * 16);
+            const cx = hotspotCenter % 4;
+            const cy = Math.floor(hotspotCenter / 4);
+            
+            interactiveState.cores.forEach(core => {
+                const dist = Math.abs(core.x - cx) + Math.abs(core.y - cy);
+                core.thermal = dist <= 1;
+            });
+            interactiveState.title = `Thermal Hotspot at (${cx},${cy})`;
+            addLogEntry(`🔥 Thermal hotspot created at region (${cx},${cy})`, 'thermal');
+            renderMesh(interactiveState);
+        }
+        
+        // Workload Burst Stimulation
+        function runWorkloadStep() {
+            // Trigger workload burst on random cores
+            const busyCores = interactiveState.cores.filter(c => c.status === 'BUSY');
+            if (busyCores.length === 0) return;
+            
+            const burstCount = Math.min(3, busyCores.length);
+            const burstCores = [];
+            
+            for (let i = 0; i < burstCount; i++) {
+                const idx = Math.floor(Math.random() * busyCores.length);
+                burstCores.push(busyCores[idx].id);
+                busyCores.splice(idx, 1);
+            }
+            
+            interactiveState.cores.forEach(core => {
+                core.workloadBurst = burstCores.includes(core.id);
+            });
+            
+            interactiveState.title = 'Workload Burst Event';
+            addLogEntry(`📊 Workload burst on cores: ${burstCores.join(', ')}`, 'remap');
+            renderMesh(interactiveState);
+            
+            // Clear burst effect after animation
+            setTimeout(() => {
+                interactiveState.cores.forEach(core => core.workloadBurst = false);
+                renderMesh(interactiveState);
+            }, 500);
+        }
+        
+        // Slider updates
+        document.getElementById('intensitySlider').addEventListener('input', function() {
+            document.getElementById('intensityValue').textContent = this.value;
+        });
+        
+        document.getElementById('speedSlider').addEventListener('input', function() {
+            const speeds = ['Very Slow', 'Slow', 'Normal', 'Fast', 'Very Fast'];
+            document.getElementById('speedValue').textContent = speeds[this.value - 1];
+        });
+        
         function loadDemoData() {
+            stopStimulation();
             interactiveMode = false;
             document.getElementById('interactiveControls').style.display = 'none';
             currentData = DEMO_DATA;
@@ -520,6 +977,7 @@
             document.getElementById('demoIndicator').style.background = '#ffa502';
             currentSnapshotIndex = 0;
             renderAll();
+            addLogEntry('Loaded single fault demo data', 'traffic');
         }
         
         // Stress Test Demo Data (3 faults)
@@ -571,6 +1029,7 @@
         ];
         
         function loadStressTestDemo() {
+            stopStimulation();
             currentData = STRESS_TEST_DATA;
             document.getElementById('demoIndicator').style.display = 'inline';
             document.getElementById('demoIndicator').textContent = 'STRESS TEST DEMO';
@@ -579,6 +1038,7 @@
             interactiveMode = false;
             document.getElementById('interactiveControls').style.display = 'none';
             renderAll();
+            addLogEntry('Loaded stress test demo (3 faults)', 'fault');
         }
         
         // Interactive Mode State
@@ -587,6 +1047,7 @@
         let interactiveHistory = [];
         
         function startInteractiveMode() {
+            stopStimulation();
             interactiveMode = true;
             // Create initial clean state
             interactiveState = {
@@ -608,7 +1069,10 @@
                         x: x,
                         y: y,
                         status: id < 10 ? "BUSY" : "HEALTHY",
-                        task_id: id < 10 ? id : null
+                        task_id: id < 10 ? id : null,
+                        thermal: false,
+                        traffic: 0,
+                        workloadBurst: false
                     });
                     if (id < 10) {
                         interactiveState.taskMap[id] = id;
@@ -625,7 +1089,7 @@
             currentSnapshotIndex = 0;
             
             document.getElementById('demoIndicator').style.display = 'inline';
-            document.getElementById('demoIndicator').textContent = 'INTERACTIVE MODE';
+            document.getElementById('demoIndicator').textContent = 'INTERACTIVE STIMULATION';
             document.getElementById('demoIndicator').style.background = 'linear-gradient(135deg, #7c3aed, #a855f7)';
             document.getElementById('interactiveControls').style.display = 'block';
             
@@ -633,6 +1097,7 @@
         }
         
         function exitInteractiveMode() {
+            stopStimulation();
             interactiveMode = false;
             document.getElementById('interactiveControls').style.display = 'none';
             loadDemoData();
@@ -640,6 +1105,7 @@
         
         function resetInteractive() {
             startInteractiveMode();
+            addLogEntry('Interactive mode reset', 'traffic');
         }
         
         function calculateInteractiveEnergy() {
@@ -681,6 +1147,9 @@
                 bestSpare.task_id = displacedTaskId;
                 bestSpare.remapped = true;
                 interactiveState.taskMap[displacedTaskId] = bestSpare.id;
+                addLogEntry(`✅ Task ${displacedTaskId} remapped to Core ${bestSpare.id}`, 'remap');
+            } else {
+                addLogEntry(`⚠️ No spare cores for Task ${displacedTaskId}!`, 'fault');
             }
             
             // Update energy and title
@@ -781,7 +1250,14 @@
                 } else if (core.task_id !== null) {
                     div.classList.add('task');
                     if (core.remapped) div.classList.add('remapped');
-                    div.innerHTML = `<span class="core-id">${core.id}</span>T${core.task_id}`;
+                    if (core.thermal) div.classList.add('thermal-hot');
+                    if (core.workloadBurst) div.classList.add('workload-burst');
+                    
+                    let content = `<span class="core-id">${core.id}</span>T${core.task_id}`;
+                    if (core.traffic > 0) {
+                        content += `<span class="traffic-indicator">${core.traffic}%</span>`;
+                    }
+                    div.innerHTML = content;
                     
                     // Add click handler for interactive mode
                     if (interactiveMode && currentSnapshotIndex === interactiveHistory.length - 1) {
@@ -791,6 +1267,7 @@
                     }
                 } else {
                     div.classList.add('spare');
+                    if (core.thermal) div.classList.add('thermal-hot');
                     div.innerHTML = `<span class="core-id">${core.id}</span>Spare`;
                 }
                 
@@ -806,6 +1283,7 @@
             const taskCount = snapshot.cores.filter(c => c.task_id !== null).length;
             const faultCount = snapshot.cores.filter(c => c.status === 'FAULTY').length;
             const spareCount = snapshot.cores.filter(c => c.status === 'HEALTHY' && c.task_id === null).length;
+            const thermalCount = snapshot.cores.filter(c => c.thermal).length;
             
             statsDiv.innerHTML = `
                 <div class="stat-box">
@@ -820,6 +1298,10 @@
                     <div class="stat-value">${spareCount}</div>
                     <div class="stat-label">Spare Cores</div>
                 </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: var(--thermal-orange)">${thermalCount}</div>
+                    <div class="stat-label">Thermal Stress</div>
+                </div>
             `;
         }
         
@@ -828,7 +1310,7 @@
             const infoText = document.getElementById('infoText');
             
             if (currentData.length < 2) {
-                container.innerHTML = '<p style="color: var(--text-dim);">Need at least 2 snapshots for comparison</p>';
+                container.innerHTML = '<p style="color: var(--text-dim);">Run stimulation to see energy comparison</p>';
                 return;
             }
             
@@ -860,12 +1342,12 @@
             const faultCount = currentData.length - 1;
             
             infoText.innerHTML = `
-                <strong>🔥 Stress Test Analysis:</strong><br>
-                • Faults Injected: <strong>${faultCount}</strong><br>
+                <strong>🔬 Stimulation Analysis Results:</strong><br>
+                • Stimulation Events: <strong>${faultCount}</strong><br>
                 • Initial Energy: <strong>${initialEnergy}</strong><br>
                 • Final Energy: <strong>${finalEnergy}</strong><br>
                 • Total Overhead: <strong style="color: ${overhead > 50 ? 'var(--fault-red)' : 'var(--accent)'}">${overhead}%</strong><br><br>
-                FTTM algorithm successfully recovered from ${faultCount} fault(s), remapping tasks to maintain system operation.
+                FTTM algorithm successfully responded to ${faultCount} stimulation event(s), maintaining system reliability.
             `;
         }
         
@@ -889,12 +1371,14 @@
                 currentSnapshotIndex = 0;
                 document.getElementById('demoIndicator').style.display = 'none';
                 renderAll();
+                addLogEntry('Loaded stimulation data from file', 'traffic');
             } catch (err) {
                 alert('Error parsing JSON: ' + err.message);
             }
         });
         
-        // Load demo data on start
+        // Initialize
+        selectStimMode('faultWave');
         loadDemoData();
     </script>
 </body>

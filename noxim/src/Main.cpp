@@ -117,8 +117,8 @@ int sc_main(int arg_num, char *arg_vet[])
         faultFile.close();
         
         if (faultCount > 0) {
-            cout << "=== FTTM SIMULATION COMPLETED ===" << endl;
-            cout << "Injected " << faultCount << " fault(s) from faults.txt" << endl;
+            cout << "=== FTTM STIMULATION COMPLETED ===" << endl;
+            cout << "Stimulated " << faultCount << " fault(s) from faults.txt" << endl;
         } else {
             cout << "No faults specified in faults.txt (or file is empty)" << endl;
         }
@@ -186,7 +186,7 @@ int sc_main(int arg_num, char *arg_vet[])
 
     // Close the simulation
     if (GlobalParams::trace_mode) sc_close_vcd_trace_file(tf);
-    cout << "Noxim simulation completed.";
+    cout << "Noxim stimulation completed.";
     cout << " (" << sc_time_stamp().to_double() / GlobalParams::clock_period_ps << " cycles executed)" << endl;
     cout << endl;
 //assert(false);

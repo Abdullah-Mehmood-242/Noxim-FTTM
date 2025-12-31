@@ -4,7 +4,7 @@ REM Usage: run_fttm.bat [fault1] [fault2] [fault3] ...
 REM Example: run_fttm.bat 0,0 1,1 2,0
 
 echo ========================================
-echo   FTTM-Noxim Simulator Launcher
+echo   FTTM-Noxim Stimulation Launcher
 echo ========================================
 echo.
 
@@ -26,13 +26,13 @@ if "%~1"=="" (
     echo.
 )
 
-echo Running Noxim simulator...
+echo Running Noxim stimulator...
 echo.
 
 noxim.exe -config ../config_examples/default_config.yaml
 
 echo.
-echo Simulation complete!
+echo Stimulation complete!
 echo Output saved to noxim_state.json
 echo.
 echo Opening GUI...

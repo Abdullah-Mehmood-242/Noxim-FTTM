@@ -1,6 +1,6 @@
 # Bridging the Gap: Python vs. Noxim (C++)
 
-You already know the logic from your Python simulator. Here is how I translated that exact logic into the complex world of Noxim.
+You already know the logic from your Python stimulator. Here is how I translated that exact logic into the complex world of Noxim.
 
 ## 1. The "Brain" (Manager)
 
@@ -64,14 +64,14 @@ I took your **Logic** (FTTM algorithms) and plugged it into Noxim's **Hardware M
 
 This is the biggest difference.
 
-| Feature | Your Python Simulator | Noxim (C++) |
+| Feature | Your Python Stimulator | Noxim (C++) |
 | :--- | :--- | :--- |
 | **Primary Output** | **Images/Plots** (Grid visualization, Energy graphs) | **Text Logs & Statistics** (Latency, Throughput, Power breakdown) |
 | **Visualization** | Built-in (Matplotlib) | **External** (You must plot the text data yourself) |
 | **Detail Level** | High-level (Task flow) | **Cycle-Accurate** (Flit-by-flit movement, exact timing) |
 
 **"What does Noxim do?"**
-Noxim simulates the **physical reality** of the chip.
+Noxim stimulates the **physical reality** of the chip.
 -   Instead of just saying "Task A sends data to Task B", Noxim simulates the **electrical signals** moving through the wires, the **buffer slots** filling up in the routers, and the **clock cycles** ticking by.
 -   **It doesn't generate images automatically.** To get the "Comparison Graph" or "Energy %", you run Noxim, save the text output to a file, and then use a Python script (like the one you already have!) to read that text file and plot the numbers.
 
